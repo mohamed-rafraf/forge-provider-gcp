@@ -1,0 +1,34 @@
+---
+apiVersion: forge.build/v1alpha1
+kind: Build
+metadata:
+  name: ubuntu-build
+spec:
+  connector:
+    type: ssh
+  infrastructureRef:
+    kind: GCPBuild
+    name: ubuntu-build
+    apiVersion: infrastructure.forge.build/v1alpha1
+  provisioners:
+    - type: built-in/shell
+      allowFail: true
+      run: |
+        Echo "Hello from shell executor"
+---
+apiVersion: infrastructure.forge.build/v1alpha1
+kind: GCPBuild
+metadata:
+  name: ubuntu-build
+spec:
+  network:
+    name: default
+  project: justk8s-playground
+  region: europe-west10
+  zone: europe-west10-a
+  instanceType: e2-medium
+#  image: projects/ubuntu-os-cloud/images/ubuntu-2204-jammy-v20240904
+  image: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+  credentialsRef:
+      name: gcp-creds
+      namespace: default

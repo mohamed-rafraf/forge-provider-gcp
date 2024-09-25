@@ -1,0 +1,23 @@
+# permissions for end users to view gcpbuilds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: forge-provider-gcp
+    app.kubernetes.io/managed-by: kustomize
+  name: gcpbuild-viewer-role
+rules:
+- apiGroups:
+  - infrastructure.forge.build
+  resources:
+  - gcpbuilds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - infrastructure.forge.build
+  resources:
+  - gcpbuilds/status
+  verbs:
+  - get

@@ -1,0 +1,9 @@
+apiVersion: infrastructure.forge.build/v1alpha1
+kind: GCPBuild
+metadata:
+  labels:
+    app.kubernetes.io/name: forge-provider-gcp
+    app.kubernetes.io/managed-by: kustomize
+  name: gcpbuild-sample
+spec:
+  # TODO(user): Add fields here

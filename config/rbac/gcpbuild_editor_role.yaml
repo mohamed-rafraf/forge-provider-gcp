@@ -1,0 +1,27 @@
+# permissions for end users to edit gcpbuilds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: forge-provider-gcp
+    app.kubernetes.io/managed-by: kustomize
+  name: gcpbuild-editor-role
+rules:
+- apiGroups:
+  - infrastructure.forge.build
+  resources:
+  - gcpbuilds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.forge.build
+  resources:
+  - gcpbuilds/status
+  verbs:
+  - get
