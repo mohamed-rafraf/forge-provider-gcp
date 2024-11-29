@@ -18,7 +18,11 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
+
+	"github.com/forge-build/forge/pkg/ssh"
 
 	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/instances"
 
@@ -56,7 +60,7 @@ type GCPBuildReconciler struct {
 // +kubebuilder:rbac:groups=infrastructure.forge.build,resources=gcpbuilds,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=infrastructure.forge.build,resources=gcpbuilds/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=infrastructure.forge.build,resources=gcpbuilds/finalizers,verbs=update
-// +kubebuilder:rbac:groups=forge.build,resources=builds,verbs=get;list;watch
+// +kubebuilder:rbac:groups=forge.build,resources=builds,verbs=get;list;watch;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -161,6 +165,13 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 		return ctrl.Result{}, err
 	}
 
+	// get ssh key
+	sshKey, err := r.GetSSHKey(ctx, buildScope)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "unable to get an ssh-key")
+	}
+	buildScope.SetSSHKey(sshKey)
+
 	reconcilers := []cloud.Reconciler{
 		networks.New(buildScope),
 		firewalls.New(buildScope),
@@ -199,4 +210,43 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 	buildScope.SetReady()
 	record.Event(buildScope.GCPBuild, "GCPClusterReconcile", "Reconciled")
 	return ctrl.Result{}, nil
+}
+
+func (r *GCPBuildReconciler) GetSSHKey(ctx context.Context, buildScope *scope.BuildScope) (key scope.SSHKey, err error) {
+	if buildScope.GCPBuild.Spec.GenerateSSHKey {
+		sshKey, err := ssh.NewKeyPair()
+		if err != nil {
+			return key, errors.Wrap(err, "cannot generate ssh key")
+		}
+
+		return scopeSSHKey(buildScope.GCPBuild.Spec.Username, string(sshKey.PrivateKey), string(sshKey.PublicKey)), nil
+	}
+
+	if buildScope.GCPBuild.Spec.SSHCredentialsRef != nil {
+		secret, err := forgeutil.GetSecretFromSecretReference(ctx, r.Client, *buildScope.GCPBuild.Spec.SSHCredentialsRef)
+		if err != nil {
+			return scope.SSHKey{}, errors.Wrap(err, "unable to get ssh credentials secret")
+		}
+
+		_, _, privKey := ssh.GetCredentialsFromSecret(secret)
+
+		pubKey, err := ssh.GetPublicKeyFromPrivateKey(privKey)
+		if err != nil {
+			return scope.SSHKey{}, errors.Wrap(err, "unable to get public key")
+		}
+
+		return scopeSSHKey(buildScope.GCPBuild.Spec.Username, privKey, pubKey), nil
+	}
+
+	return scope.SSHKey{}, errors.New("no ssh key provided, consider using spec.generateSSHKey or provide a private key")
+}
+
+func scopeSSHKey(username, privateKey, pubKey string) scope.SSHKey {
+	sshPublicKey := strings.TrimSuffix(pubKey, "\n")
+
+	return scope.SSHKey{
+		MetadataSSHKeys: fmt.Sprintf("%s:%s %s", username, sshPublicKey, username),
+		PrivateKey:      privateKey,
+		PublicKey:       pubKey,
+	}
 }

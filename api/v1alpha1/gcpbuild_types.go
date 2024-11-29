@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	buildv1 "github.com/forge-build/forge/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
@@ -132,6 +133,9 @@ type SuppliedKey struct {
 
 // GCPBuildSpec defines the desired state of GCPBuild
 type GCPBuildSpec struct {
+	// Embedded ConnectionSpec to define default connection credentials.
+	buildv1.ConnectionSpec `json:",inline"`
+
 	// Project is the name of the project to deploy the cluster to.
 	Project string `json:"project"`
 
@@ -390,10 +394,10 @@ type Network struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-//+kubebuilder:resource:path=gcpbuilds,scope=Namespaced,categories=forge;gcp,singular=gcpbuild
-//+kubebuilder:printcolumn:name="Build",type="string",JSONPath=".metadata.labels['forge\\.build/build-name']",description="Build"
-//+kubebuilder:printcolumn:name="Machine Ready",type="string",JSONPath=".status.machineReady",description="Machine Ready"
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Build is ready"
+// +kubebuilder:resource:path=gcpbuilds,scope=Namespaced,categories=forge;gcp,singular=gcpbuild
+// +kubebuilder:printcolumn:name="Build",type="string",JSONPath=".metadata.labels['forge\\.build/build-name']",description="Build"
+// +kubebuilder:printcolumn:name="Machine Ready",type="string",JSONPath=".status.machineReady",description="Machine Ready"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.ready",description="Build is ready"
 
 // GCPBuild is the Schema for the gcpbuilds API
 type GCPBuild struct {

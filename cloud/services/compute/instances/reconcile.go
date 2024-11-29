@@ -18,7 +18,6 @@ package instances
 
 import (
 	"context"
-
 	"github.com/GoogleCloudPlatform/k8s-cloud-provider/pkg/cloud/meta"
 	"github.com/pkg/errors"
 	"google.golang.org/api/compute/v1"
@@ -42,8 +41,19 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	//zone := s.scope.Zone()
 	//project := s.scope.Project()
 
+	var publicIP string
+	for _, iface := range instance.NetworkInterfaces {
+		for _, ac := range iface.AccessConfigs {
+			publicIP = ac.NatIP
+			break
+		}
+	}
+
 	//TODO things, after the machine is created
-	// s.scope.ensureCredentialsSecret()
+	err = s.scope.EnsureCredentialsSecret(ctx, publicIP)
+	if err != nil {
+		return err
+	}
 	s.scope.SetInstanceID(instance.Name)
 	s.scope.SetInstanceStatus(infrav1.InstanceStatus(instance.Status))
 

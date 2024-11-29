@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/forge-build/forge/util"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -91,6 +93,16 @@ type BuildScope struct {
 	GCPBuild *infrav1.GCPBuild
 	//BuildGetter cloud.BuildGetter
 	GCPServices
+
+	sshKEy SSHKey
+}
+
+const sshMetaKey = "ssh-keys"
+
+type SSHKey struct {
+	MetadataSSHKeys string
+	PrivateKey      string
+	PublicKey       string
 }
 
 // ANCHOR: BuildGetter
@@ -189,6 +201,16 @@ func (s *BuildScope) GetInstanceStatus() *infrav1.InstanceStatus {
 // SetInstanceStatus sets the GCPMachine instance status.
 func (s *BuildScope) SetInstanceStatus(v infrav1.InstanceStatus) {
 	s.GCPBuild.Status.InstanceStatus = &v
+}
+
+// GetSSHKey returns the ssh key.
+func (s *BuildScope) GetSSHKey() SSHKey {
+	return s.sshKEy
+}
+
+// SetSSHKey sets ssh key.
+func (s *BuildScope) SetSSHKey(key SSHKey) {
+	s.sshKEy = key
 }
 
 // ANCHOR_END: BuilderGetter
@@ -448,6 +470,12 @@ func (s *BuildScope) InstanceAdditionalMetadataSpec() *compute.Metadata {
 		})
 	}
 
+	// Add the ssh keys.
+	metadata.Items = append(metadata.Items, &compute.MetadataItems{
+		Key:   sshMetaKey,
+		Value: &s.sshKEy.MetadataSSHKeys,
+	})
+
 	return metadata
 }
 
@@ -504,6 +532,65 @@ func (s *BuildScope) GetBootstrapData() (string, error) {
 	}
 
 	return string(value), nil
+}
+
+func (s *BuildScope) EnsureCredentialsSecret(ctx context.Context, host string) error {
+	err := util.EnsureCredentialsSecret(ctx, s.client, s.Build, util.SSHCredentials{
+		Host:       host,
+		Username:   s.GCPBuild.Spec.Username,
+		PrivateKey: s.sshKEy.PrivateKey,
+		PublicKey:  s.sshKEy.PublicKey,
+	}, "gcp")
+	if err != nil {
+		return err
+	}
+	//patchHelper, err := patch.NewHelper(s.Build, s.client)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//name := fmt.Sprintf("%s-ssh-credentias", s.Build.Name)
+	//credentials := &corev1.Secret{
+	//	ObjectMeta: metav1.ObjectMeta{
+	//		Name:      name,
+	//		Namespace: s.Build.Namespace,
+	//		Labels: map[string]string{
+	//			buildv1.BuildNameLabel: s.Build.Name,
+	//		},
+	//		Annotations: map[string]string{
+	//			buildv1.ManagedByAnnotation: "forge-gcp",
+	//			buildv1.ProviderNameLabel:   "gcp",
+	//		},
+	//		OwnerReferences: []metav1.OwnerReference{
+	//			{
+	//				Name:       s.Build.Name,
+	//				UID:        s.Build.GetUID(),
+	//				APIVersion: s.Build.APIVersion,
+	//				Kind:       s.Build.Kind,
+	//			},
+	//		},
+	//	},
+	//	StringData: map[string]string{
+	//		"host":       host,
+	//		"username":   s.GCPBuild.Spec.Username,
+	//		"privateKey": s.sshKEy.PrivateKey,
+	//		"publicKey":  s.sshKEy.PrivateKey,
+	//	},
+	//}
+	//err = s.client.Create(ctx, credentials)
+	//if err != nil {
+	//	return errors.Wrap(err, "unable to create ssh credentials secret")
+	//}
+	//
+	//// patch Build to include the credentials
+	//s.Build.Spec.Connector.Credentials = &corev1.LocalObjectReference{Name: name}
+	//
+	//err = patchHelper.Patch(ctx, s.Build)
+	//if err != nil {
+	//	return errors.Wrap(err, "unable to patch Build")
+	//}
+
+	return nil
 }
 
 // PatchObject persists the cluster configuration and status.

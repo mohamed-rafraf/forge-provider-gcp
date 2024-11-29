@@ -66,6 +66,7 @@ type BuildGetter interface {
 type BuildSetter interface {
 	SetInstanceID(instanceID string)
 	SetInstanceStatus(v infrav1.InstanceStatus)
+	EnsureCredentialsSecret(ctx context.Context, host string) error
 }
 
 // Build is an interface which can get and set build information.

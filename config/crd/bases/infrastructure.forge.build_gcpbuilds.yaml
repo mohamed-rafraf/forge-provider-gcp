@@ -269,6 +269,11 @@ spec:
                 items:
                   type: string
                 type: array
+              generateSSHKey:
+                description: |-
+                  GenerateSSHKey is a flag to specify whether the controller should generate a new private key for the connection.
+                  GenerateSSHKey will take precedence over the privateKey in the secret.
+                type: boolean
               image:
                 description: |-
                   Image is the full reference to a valid image to be used for this machine.
@@ -438,10 +443,33 @@ spec:
                       type: string
                     type: array
                 type: object
+              sshCredentialsRef:
+                description: |-
+                  CredentialsRef is a reference to the secret which contains the credentials to connect to the infrastructure machine.
+                  The secret should contain the following keys:
+                  - username: The username to connect to the machine
+                  - password: The password for authentication (if applicable)
+                  - privateKey: The SSH private key for authentication (if applicable)
+                properties:
+                  name:
+                    description: name is unique within a namespace to reference a
+                      secret resource.
+                    type: string
+                  namespace:
+                    description: namespace defines the space within which the secret
+                      name must be unique.
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               subnet:
                 description: |-
                   Subnet is a reference to the subnetwork to use for this instance. If not specified,
                   the first subnetwork retrieved from the Cluster Region and Network is picked.
+                type: string
+              username:
+                default: root
+                description: Username is the username to connect to the infrastructure
+                  machine.
                 type: string
               zone:
                 description: The GCP Region the cluster lives in.
@@ -450,6 +478,7 @@ spec:
             - instanceType
             - project
             - region
+            - username
             - zone
             type: object
           status:
