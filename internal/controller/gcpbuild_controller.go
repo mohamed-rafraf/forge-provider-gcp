@@ -24,8 +24,8 @@ import (
 
 	"github.com/forge-build/forge/pkg/ssh"
 
+	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/images"
 	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/instances"
-	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/machineimages"
 
 	"github.com/forge-build/forge-provider-gcp/cloud"
 	"github.com/forge-build/forge-provider-gcp/cloud/scope"
@@ -180,7 +180,7 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 		subnets.New(buildScope),
 		// TODO, make sure to provide a way of connecting to this machine.
 		instances.New(buildScope),
-		machineimages.New(buildScope),
+		images.New(buildScope),
 		// TODO, createConnectionSecret.
 		// TODO exportImage,
 		// TODO cleanup GCP resources.

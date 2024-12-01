@@ -56,9 +56,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 	// Optionally log the successful reconciliation
 	logger.Info("Image reconciliation successful", "image", imageName)
-	s.scope.SetBuildReady()
 
-	if !s.scope.IsBuildReady() || s.scope.IsReady() {
+	if s.scope.IsReady() {
 		logger.Info("Not ready for checking Image")
 		return nil
 	}

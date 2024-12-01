@@ -37,8 +37,6 @@ type Scope interface {
 	IsProvisionerReady() bool
 	ImageName() string
 	Name() string
-	SetBuildReady()
-	IsBuildReady() bool
 	IsReady() bool
 	GetComputeService() *compute.Service
 	SetArtifactRef(artificatRef string)
