@@ -1,0 +1,52 @@
+# Copyright 2024 The Forge Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: forge.build/v1alpha1
+kind: Build
+metadata:
+  name: ubuntu-build
+spec:
+  connector:
+    type: ssh
+  infrastructureRef:
+    kind: GCPBuild
+    name: ubuntu-build
+    apiVersion: infrastructure.forge.build/v1alpha1
+  provisioners:
+    - type: built-in/shell
+      allowFail: true
+      run: |
+        echo "Hello from shell executor" > ~/hello-2.txt
+---
+apiVersion: infrastructure.forge.build/v1alpha1
+kind: GCPBuild
+metadata:
+  name: ubuntu-build
+spec:
+  username: builder
+  generateSSHKey: true
+  network:
+    name: default
+  project: justk8s-playground
+  region: europe-west10
+  publicIP: true
+  zone: europe-west10-a
+  instanceType: e2-medium
+  image: projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts
+  credentialsRef:
+      name: gcp-creds
+      namespace: default
+#  additionalMetadata:
+#    - key: enable-oslogin
+#      value: "TRUE"
