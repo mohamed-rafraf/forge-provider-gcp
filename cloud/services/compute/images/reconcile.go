@@ -32,7 +32,7 @@ import (
 func (s *Service) Reconcile(ctx context.Context) error {
 	logger := log.FromContext(ctx)
 
-	if !s.scope.IsProvisionerReady() {
+	if !s.scope.IsProvisionerReady() || s.scope.IsReady() {
 		logger.Info("Not ready for exporting the image")
 		return nil
 	}
@@ -71,9 +71,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	// Wait for the disk image to be ready
 	logger.Info("Waiting for image readiness", "image", imageName)
 	key := &meta.Key{Name: imageName}
-	if s.scope.IsReady() {
-		return nil
-	}
 	image, err := s.images.Get(ctx, key)
 	if err != nil {
 		return fmt.Errorf("failed to get image status: %v", err)

@@ -276,7 +276,7 @@ type GCPBuildStatus struct {
 	// CleanUpReady indicates that the Infrastructure is cleaned up or not.
 	// +optional
 	// +kubebuilder:default=false
-	CleanUpReady bool `json:"cleanUpReady"`
+	CleanedUP bool `json:"cleanedUP,omitempty"`
 
 	// Network status of network.
 	Network Network `json:"network,omitempty"`

@@ -143,7 +143,7 @@ func (r *GCPBuildReconciler) reconcileDelete(ctx context.Context, buildScope *sc
 
 	controllerutil.RemoveFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
 	record.Event(buildScope.GCPBuild, "GCPBuildReconciler", "Reconciled")
-	buildScope.SetCleanUpReady()
+	buildScope.SetCleanedUP()
 	return nil
 }
 
@@ -160,19 +160,6 @@ func (r *GCPBuildReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 
 func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *scope.BuildScope) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciling GCPBuild")
-
-	controllerutil.AddFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
-	if err := buildScope.PatchObject(); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// get ssh key
-	sshKey, err := r.GetSSHKey(ctx, buildScope)
-	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "unable to get an ssh-key")
-	}
-	buildScope.SetSSHKey(sshKey)
 
 	reconcilers := []cloud.Reconciler{
 		networks.New(buildScope),
@@ -195,7 +182,21 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 		}
 	}
 
-	if buildScope.IsReady() && !buildScope.IsCleanedUp() {
+	logger.Info("Reconciling GCPBuild")
+
+	controllerutil.AddFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
+	if err := buildScope.PatchObject(); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// get ssh key
+	sshKey, err := r.GetSSHKey(ctx, buildScope)
+	if err != nil {
+		return ctrl.Result{}, errors.Wrap(err, "unable to get an ssh-key")
+	}
+	buildScope.SetSSHKey(sshKey)
+
+	if buildScope.IsReady() && !buildScope.IsCleanedUP() {
 		return ctrl.Result{}, r.reconcileDelete(ctx, buildScope)
 	}
 
