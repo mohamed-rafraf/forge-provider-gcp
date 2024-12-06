@@ -24,6 +24,7 @@ import (
 
 	"github.com/forge-build/forge/pkg/ssh"
 
+	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/images"
 	"github.com/forge-build/forge-provider-gcp/cloud/services/compute/instances"
 
 	"github.com/forge-build/forge-provider-gcp/cloud"
@@ -142,6 +143,7 @@ func (r *GCPBuildReconciler) reconcileDelete(ctx context.Context, buildScope *sc
 
 	controllerutil.RemoveFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
 	record.Event(buildScope.GCPBuild, "GCPBuildReconciler", "Reconciled")
+	buildScope.SetCleanedUP()
 	return nil
 }
 
@@ -158,6 +160,28 @@ func (r *GCPBuildReconciler) SetupWithManager(ctx context.Context, mgr ctrl.Mana
 
 func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *scope.BuildScope) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+
+	reconcilers := []cloud.Reconciler{
+		networks.New(buildScope),
+		firewalls.New(buildScope),
+		subnets.New(buildScope),
+		// TODO, make sure to provide a way of connecting to this machine.
+		instances.New(buildScope),
+		images.New(buildScope),
+		// TODO, createConnectionSecret.
+		// TODO exportImage,
+		// TODO cleanup GCP resources.
+	}
+	if !buildScope.IsReady() {
+		for _, r := range reconcilers {
+			if err := r.Reconcile(ctx); err != nil {
+				logger.Error(err, "Reconcile error")
+				record.Warnf(buildScope.GCPBuild, "GCPBuildReconciler", "Reconcile error - %v", err)
+				return ctrl.Result{}, err
+			}
+		}
+	}
+
 	logger.Info("Reconciling GCPBuild")
 
 	controllerutil.AddFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
@@ -172,23 +196,8 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 	}
 	buildScope.SetSSHKey(sshKey)
 
-	reconcilers := []cloud.Reconciler{
-		networks.New(buildScope),
-		firewalls.New(buildScope),
-		subnets.New(buildScope),
-		// TODO, make sure to provide a way of connecting to this machine.
-		instances.New(buildScope),
-		// TODO, createConnectionSecret.
-		// TODO exportImage,
-		// TODO cleanup GCP resources.
-	}
-
-	for _, r := range reconcilers {
-		if err := r.Reconcile(ctx); err != nil {
-			logger.Error(err, "Reconcile error")
-			record.Warnf(buildScope.GCPBuild, "GCPBuildReconciler", "Reconcile error - %v", err)
-			return ctrl.Result{}, err
-		}
+	if buildScope.IsReady() && !buildScope.IsCleanedUP() {
+		return ctrl.Result{}, r.reconcileDelete(ctx, buildScope)
 	}
 
 	if buildScope.GetInstanceID() == nil {

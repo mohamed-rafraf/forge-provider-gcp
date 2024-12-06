@@ -487,6 +487,11 @@ spec:
               artifactRef:
                 description: ArtifactRef The Reference of image that has been built.
                 type: string
+              cleanedUP:
+                default: false
+                description: CleanUpReady indicates that the Infrastructure is cleaned
+                  up or not.
+                type: boolean
               conditions:
                 description: Conditions defines current service state of the ProxmoxCluster.
                 items:

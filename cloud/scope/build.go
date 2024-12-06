@@ -227,6 +227,15 @@ func (s *BuildScope) SetMachineReady() {
 	s.GCPBuild.Status.MachineReady = true
 }
 
+// SetBuildReady sets cleanup ready status.
+func (s *BuildScope) SetCleanedUP() {
+	s.GCPBuild.Status.CleanedUP = true
+}
+
+func (s *BuildScope) SetArtifactRef(reference string) {
+	s.GCPBuild.Status.ArtifactRef = &reference
+}
+
 // ANCHOR_END: ClusterSetter
 
 // ANCHOR: ClusterNetworkSpec
@@ -601,4 +610,25 @@ func (s *BuildScope) PatchObject() error {
 // Close closes the current scope persisting the cluster configuration and status.
 func (s *BuildScope) Close() error {
 	return s.PatchObject()
+}
+
+func (s *BuildScope) ImageName() string {
+	return fmt.Sprintf("%s-%s", "forge", s.Name())
+}
+
+func (s *BuildScope) IsProvisionerReady() bool {
+	return s.Build.Status.ProvisionersReady
+}
+
+func (s *BuildScope) IsReady() bool {
+	return s.GCPBuild.Status.Ready
+}
+
+func (s *BuildScope) IsCleanedUP() bool {
+	return s.GCPBuild.Status.CleanedUP
+}
+
+// Implement the method to return the Compute service
+func (b *BuildScope) GetComputeService() *compute.Service {
+	return b.GCPServices.Compute
 }
