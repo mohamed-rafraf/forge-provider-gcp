@@ -487,7 +487,12 @@ spec:
               artifactRef:
                 description: ArtifactRef The Reference of image that has been built.
                 type: string
-              cleanedUP:
+              buildReady:
+                default: false
+                description: BuildReady indicates that the associated Build is ready
+                  to accept connection.
+                type: boolean
+              cleanUpReady:
                 default: false
                 description: CleanUpReady indicates that the Infrastructure is cleaned
                   up or not.

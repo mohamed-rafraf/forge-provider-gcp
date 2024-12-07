@@ -10,7 +10,6 @@ labels:
       forge.build/v1alpha1: v1alpha1
     includeTemplates: true
 
-patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
