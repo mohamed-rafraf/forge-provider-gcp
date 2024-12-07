@@ -204,14 +204,9 @@ func (s *BuildScope) SetMachineReady() {
 	s.GCPBuild.Status.MachineReady = true
 }
 
-// SetBuildReady sets build ready status.
-func (s *BuildScope) SetBuildReady() {
-	s.GCPBuild.Status.BuildReady = true
-}
-
 // SetBuildReady sets cleanup ready status.
-func (s *BuildScope) SetCleanUpReady() {
-	s.GCPBuild.Status.CleanUpReady = true
+func (s *BuildScope) SetCleanedUP() {
+	s.GCPBuild.Status.CleanedUP = true
 }
 
 func (s *BuildScope) SetArtifactRef(reference string) {
@@ -493,16 +488,12 @@ func (s *BuildScope) IsProvisionerReady() bool {
 	return s.Build.Status.ProvisionersReady
 }
 
-func (s *BuildScope) IsBuildReady() bool {
-	return s.GCPBuild.Status.BuildReady
-}
-
 func (s *BuildScope) IsReady() bool {
 	return s.GCPBuild.Status.Ready
 }
 
-func (s *BuildScope) IsCleanedUp() bool {
-	return s.GCPBuild.Status.CleanUpReady
+func (s *BuildScope) IsCleanedUP() bool {
+	return s.GCPBuild.Status.CleanedUP
 }
 
 // Implement the method to return the Compute service

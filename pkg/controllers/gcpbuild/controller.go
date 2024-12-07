@@ -147,7 +147,7 @@ func (r *GCPBuildReconciler) reconcileDelete(ctx context.Context, buildScope *sc
 
 	controllerutil.RemoveFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
 	r.recordEvent(buildScope.GCPBuild, "Normal", "Reconciled", fmt.Sprintf("%s is reconciled successfully ", buildScope.GCPBuild.Name))
-	buildScope.SetCleanUpReady()
+	buildScope.SetCleanedUP()
 	return nil
 }
 func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *scope.BuildScope) (ctrl.Result, error) {
@@ -183,7 +183,7 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 	}
 	buildScope.SetSSHKey(sshKey)
 
-	if buildScope.IsReady() && !buildScope.IsCleanedUp() {
+	if buildScope.IsReady() && !buildScope.IsCleanedUP() {
 		return ctrl.Result{}, r.reconcileDelete(ctx, buildScope)
 	}
 
