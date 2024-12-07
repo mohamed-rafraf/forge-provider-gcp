@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package contains all the crd for forge-provider-gcp
-package crd
+// Package images implements reconciler for exporting the image build.
+package images

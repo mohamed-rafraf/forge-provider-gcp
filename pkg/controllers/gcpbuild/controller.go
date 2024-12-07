@@ -25,8 +25,8 @@ import (
 	"github.com/forge-build/forge/pkg/ssh"
 	"go.uber.org/zap"
 
+	"github.com/forge-build/forge-provider-gcp/pkg/cloud/gcp/compute/images"
 	"github.com/forge-build/forge-provider-gcp/pkg/cloud/gcp/compute/instances"
-	"github.com/forge-build/forge-provider-gcp/pkg/cloud/gcp/compute/machineimages"
 
 	"github.com/forge-build/forge-provider-gcp/pkg/cloud"
 	"github.com/forge-build/forge-provider-gcp/pkg/cloud/gcp/compute/firewalls"
@@ -151,6 +151,24 @@ func (r *GCPBuildReconciler) reconcileDelete(ctx context.Context, buildScope *sc
 	return nil
 }
 func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *scope.BuildScope) (ctrl.Result, error) {
+	reconcilers := []cloud.Reconciler{
+		networks.New(buildScope),
+		firewalls.New(buildScope),
+		subnets.New(buildScope),
+		instances.New(buildScope),
+		images.New(buildScope),
+	}
+
+	if !buildScope.IsReady() {
+		for _, reconciler := range reconcilers {
+			if err := reconciler.Reconcile(ctx); err != nil {
+				r.log.Error(err, "Reconcile error")
+				r.recordEvent(buildScope.GCPBuild, "Warning", "Building Failed", fmt.Sprintf("Reconcile error - %v ", err))
+				return ctrl.Result{}, err
+			}
+		}
+	}
+
 	r.log.Info("Reconciling GCPBuild")
 
 	controllerutil.AddFinalizer(buildScope.GCPBuild, infrav1.BuildFinalizer)
@@ -164,23 +182,6 @@ func (r *GCPBuildReconciler) reconcileNormal(ctx context.Context, buildScope *sc
 		return ctrl.Result{}, errors.Wrap(err, "unable to get an ssh-key")
 	}
 	buildScope.SetSSHKey(sshKey)
-
-	reconcilers := []cloud.Reconciler{
-		networks.New(buildScope),
-		firewalls.New(buildScope),
-		subnets.New(buildScope),
-		instances.New(buildScope),
-		machineimages.New(buildScope),
-	}
-	if !buildScope.IsReady() {
-		for _, reconciler := range reconcilers {
-			if err := reconciler.Reconcile(ctx); err != nil {
-				r.log.Error(err, "Reconcile error")
-				r.recordEvent(buildScope.GCPBuild, "Warning", "Building Failed", fmt.Sprintf("Reconcile error - %v ", err))
-				return ctrl.Result{}, err
-			}
-		}
-	}
 
 	if buildScope.IsReady() && !buildScope.IsCleanedUp() {
 		return ctrl.Result{}, r.reconcileDelete(ctx, buildScope)
